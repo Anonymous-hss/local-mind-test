@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<!--
+  Sidebar Test Harness — loads real sidebar.css + sidebar.js
+  outside of VS Code with mocked acquireVsCodeApi.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/media/sidebar.css" rel="stylesheet">
+    <title>LocalMind Sidebar — Test Harness</title>
+    <style>
+        :root {
+            --vscode-editor-background: #1e1e1e;
+            --vscode-editor-foreground: #cccccc;
+            --vscode-sideBar-background: #252526;
+            --vscode-sideBarTitle-foreground: #bbbbbb;
+            --vscode-input-background: #3c3c3c;
+            --vscode-input-foreground: #cccccc;
+            --vscode-input-border: #555555;
+            --vscode-button-background: #0e639c;
+            --vscode-button-foreground: #ffffff;
+            --vscode-button-hoverBackground: #1177bb;
+            --vscode-focusBorder: #007fd4;
+            --vscode-textLink-foreground: #3794ff;
+            --vscode-errorForeground: #f48771;
+            --vscode-list-hoverBackground: #2a2d2e;
+            --vscode-badge-background: #4d4d4d;
+            --vscode-badge-foreground: #cccccc;
+            --vscode-scrollbarSlider-background: rgba(121, 121, 121, 0.4);
+            --vscode-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --vscode-font-size: 13px;
+            --success: #4ec9b0;
+            --danger: #f44747;
+            --warning: #f0ad4e;
+        }
+        body {
+            background: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            font-family: var(--vscode-font-family);
+            font-size: var(--vscode-font-size);
+            width: 300px; /* Simulate sidebar width */
+        }
+    </style>
+    <script>
+        window.__testMessages = [];
+        function acquireVsCodeApi() {
+            return {
+                postMessage(msg) { window.__testMessages.push(msg); },
+                getState() { return null; },
+                setState(s) { return s; },
+            };
+        }
+        window.__injectMessage = function(data) {
+            window.dispatchEvent(new MessageEvent('message', { data }));
+        };
+        window.__clearMessages = function() { window.__testMessages = []; };
+
+        window.__setState = function(stateName) {
+            window.__clearMessages();
+            const F = window.__FIXTURES;
+            switch (stateName) {
+                case 'initial': break;
+                case 'online':
+                    window.__injectMessage(F.STATUS_ONLINE);
+                    break;
+                case 'offline':
+                    window.__injectMessage(F.STATUS_OFFLINE);
+                    break;
+                case 'plan-active':
+                    window.__injectMessage(F.STATUS_ONLINE);
+                    window.__injectMessage(F.PLAN_ACTIVE);
+                    break;
+                case 'plan-completed':
+                    window.__injectMessage(F.STATUS_ONLINE);
+                    window.__injectMessage(F.PLAN_COMPLETED);
+                    break;
+                case 'streaming':
+                    window.__injectMessage(F.STATUS_ONLINE);
+                    window.__injectMessage(F.LOG_INFO);
+                    for (const chunk of F.STREAM_CHUNKS) {
+                        window.__injectMessage(chunk);
+                    }
+                    break;
+                case 'error-log':
+                    window.__injectMessage(F.STATUS_ONLINE);
+                    window.__injectMessage(F.LOG_INFO);
+                    window.__injectMessage(F.LOG_SUCCESS);
+                    window.__injectMessage(F.LOG_WARNING);
+                    window.__injectMessage(F.LOG_ERROR);
+                    break;
+            }
+        };
+    </script>
+    <script src="/fixtures.js"></script>
+    <script>
+        window.__FIXTURES = (typeof module !== 'undefined' && module.exports)
+            ? module.exports : window.__FIXTURES_GLOBAL || {};
+    </script>
+</head>
+<body>
+    <!-- Exact copy of AgentSidebarProvider._getHtmlForWebview() -->
+    <div class="header">
+        <div class="header-top">
+            <span class="brand">LocalMind</span>
+            <div class="status-badge">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">CONNECTING...</span>
+            </div>
+        </div>
+        <div class="model-info">
+            Running: Llama 3 (8B) | 42ms
+        </div>
+    </div>
+
+    <div class="content">
+        <section>
+            <h3>Execution Plan</h3>
+            <ul class="plan-list" id="planList">
+                <li class="plan-item">
+                    <span class="checkbox">[ ]</span>
+                    <span>Waiting for command...</span>
+                </li>
+            </ul>
+        </section>
+
+        <section class="risk-alert" style="display: none;" id="riskAlert">
+            <svg class="risk-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+                <path d="M8 1L1 14h14L8 1zm0 2.5l5 9H3l5-9z M7 10h2v2H7v-2zm0-5h2v4H7V5z"/>
+            </svg>
+            <div class="risk-content">
+                <strong>High Risk Action</strong>
+                <p>File deletion detected.</p>
+            </div>
+        </section>
+
+        <section>
+            <h3>System Log</h3>
+            <div class="log-container" id="logContainer">
+                <div class="log-entry">
+                    <span class="log-time">System ~</span>
+                    <span class="log-msg">Ready.</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="footer">
+        <div class="action-bar">
+            <button class="btn-action btn-approve" id="btnApprove">
+                <span>[y]</span> APPROVE
+            </button>
+            <button class="btn-action btn-reject" id="btnReject">
+                <span>[n]</span> REJECT
+            </button>
+            <button class="btn-action btn-abort" id="btnAbort">
+                ABORT
+            </button>
+        </div>
+        <div class="input-container">
+            <span class="prompt-symbol">&gt;</span>
+            <input type="text" class="command-input" id="commandInput"
+                   placeholder="Refactor auth loop @login.go" autocomplete="off">
+            <div class="input-line"></div>
+        </div>
+    </div>
+
+    <script src="/media/sidebar.js"></script>
+</body>
+</html>

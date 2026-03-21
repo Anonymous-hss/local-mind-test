@@ -1,0 +1,16 @@
+{
+  "name": "localmind-ui-test",
+  "version": "1.0.0",
+  "description": "Visual regression & behavioral testing for LocalMind extension webviews",
+  "private": true,
+  "scripts": {
+    "serve": "node server.js",
+    "test": "node tests/visual.test.js",
+    "update-baselines": "node tests/visual.test.js --update-baselines"
+  },
+  "dependencies": {
+    "pixelmatch": "^5.3.0",
+    "pngjs": "^7.0.0",
+    "puppeteer": "^23.0.0"
+  }
+}
